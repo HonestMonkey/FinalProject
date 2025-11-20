@@ -1,0 +1,58 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TeamProject.Data;
+using TeamProject.Models;
+
+namespace TeamProject.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class BreakfastsController : ControllerBase
+    {
+        private readonly ApplicationDbContext _db;
+        public BreakfastsController(ApplicationDbContext db) { _db = db; }
+
+        [HttpGet]
+        public async Task<IActionResult> Get(int? id)
+        {
+            if (id == null || id == 0)
+                return Ok(await _db.Breakfasts.Take(5).ToListAsync());
+
+            var item = await _db.Breakfasts.FindAsync(id.Value);
+            if (item == null) return NotFound();
+            return Ok(item);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(Breakfast model)
+        {
+            _db.Breakfasts.Add(model);
+            await _db.SaveChangesAsync();
+            return CreatedAtAction(nameof(Get), new { id = model.Id }, model);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, Breakfast model)
+        {
+            if (id != model.Id) return BadRequest();
+            _db.Entry(model).State = EntityState.Modified;
+            try { await _db.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_db.Breakfasts.Any(e => e.Id == id)) return NotFound();
+                else throw;
+            }
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var item = await _db.Breakfasts.FindAsync(id);
+            if (item == null) return NotFound();
+            _db.Breakfasts.Remove(item);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+    }
+}
